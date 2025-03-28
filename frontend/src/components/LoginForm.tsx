@@ -20,7 +20,11 @@ const formSchema = z.object({
   password: z.string().min(1, { message: "Password is required." }),
 });
 
-export default function LoginForm() {
+interface toggleLoginForm {
+  toggleLoginForm: () => void;
+}
+
+export default function LoginForm({ toggleLoginForm }: toggleLoginForm) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -29,20 +33,31 @@ export default function LoginForm() {
     },
   });
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Username:", values.userName);
-    console.log("Password:", values.password);
-    
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!values.userName || !values.password) {
-        alert("Username and password are required ❌");
-        return; 
+      return alert("Username and password are required");
+    }
+
+    const email = values.userName;
+    const password = values.password;
+    try {
+      const response = await fetch("http://localhost:5000/account/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log("Login Failed : ", data.error);
+        return false;
       }
-    
-      // Save to local storage
-      localStorage.setItem("userName", values.userName);
-      localStorage.setItem("password", values.password);
-    
-      alert("Saved to local storage ✅");
+      console.log("Login successful:", data);
+    } catch (error) {
+      console.error("Login error:", error);
+      alert("An error occurred while logging in");
+    }
   };
 
   return (
@@ -74,6 +89,8 @@ export default function LoginForm() {
             </FormItem>
           )}
         />
+        <p onClick={toggleLoginForm}>create account</p>
+
         <Button type="submit">Sign In</Button>
       </form>
     </Form>
